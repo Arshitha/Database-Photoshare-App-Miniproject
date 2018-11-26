@@ -7,7 +7,7 @@
 <h2>Your Friend List</h2>
 <ul>
     {% for friend in friend_list %}
-        <li>{{friend[0]}} </li>
+        <li>{{friend}} </li>
     {% endfor %}
     </ul>
 {% endif %}
@@ -38,7 +38,6 @@
 
 </div>
 <br>
-
 
 <a href='/add_friends'>Add a Friend</a><br>
 <a href='/'>Go home</a>

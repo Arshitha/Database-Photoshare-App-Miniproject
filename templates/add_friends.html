@@ -4,19 +4,6 @@
   <h4>{{message}}!</h4>
 {% endif %}
 
-{% if updated_friend_list %}
-<h2>Your updated Friend List</h2>
-<ul>
-    {% for friend in updated_friend_list%}
-        <li>{{friend}}</li>
-    {% endfor %}
-    </ul>
-{% endif %}
-
-<!-- {% if updated_friend_list %}
-<h2>No New Friend Added</h2>
-{% endif %} -->
-
 <ul>
     <form method="post" action="/add_friends">
         <label for="search">Add Friends</label><br>
@@ -34,4 +21,8 @@
     </ul>
 {% endif %}
 
+<a href='/friends'>Go to Friend List</a>
+<br>
+<a href='/profile'>Go to my Profile</a>
+<br>
 <a href='/'>Go home</a>

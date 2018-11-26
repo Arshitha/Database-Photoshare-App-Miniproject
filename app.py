@@ -115,31 +115,35 @@ def logout():
 def unauthorized_handler():
 	return render_template('unauth.html') 
 
-#you can specify specific methods (GET/POST) in function header instead of inside the functions as seen earlier
+# you can specify specific methods (GET/POST) in function header instead of inside the functions as seen earlier
 
 
 # Becoming a Registered User
 @app.route("/register/", methods=['GET'])
 def register():
-
 	return render_template('improved_register.html', supress='True')  
 
 @app.route("/register/", methods=['POST'])
 def register_user():
+	cursor = conn.cursor()
 	try:
 		email=request.form.get('email')
                 print email
 		password=request.form.get('password')
-		getUserFirstName = request.form.get('firstname')
+		first_name = request.form.get('firstname')
 		last_name = request.form.get('lastname')
+		if request.files['pro_pic']:
+
+			imgfile = request.files['pro_pic']
+			photo_data = base64.standard_b64encode(imgfile.read())
+		else:
+			photo_data = getProfilePicture(14)
 	except:
 		print "couldn't find all tokens" #this prints to shell, end users will not see this (all print statements go to shell)
 		return flask.redirect(flask.url_for('register'))
-	cursor = conn.cursor()
 	test =  isEmailUnique(email)
 	if test:
-		print cursor.execute("INSERT INTO Users (getUserFirstName, last_name, email, password) VALUES ('{0}', '{1}','{2}','{3}')".format(getUserFirstName, last_name, email, password))
-
+		print cursor.execute("INSERT INTO Users (first_name, last_name, email, password, Profile_Pic) VALUES ('{0}', '{1}','{2}','{3}','{4}')".format(first_name, last_name, email, password,photo_data))
 		conn.commit()
 		uid = getUserIdFromEmail(email);
 		print uid
@@ -149,7 +153,7 @@ def register_user():
 		user = User()
 		user.id = email
 		flask_login.login_user(user)
-		return render_template('profile.html', name=getUserFirstName, message='Account Created Successfully')
+		return render_template('profile.html', name=first_name, message='Account Created Successfully', photos=getProfilePicture(uid))
 	else:
 		print "couldn't find all tokens"
 		return flask.redirect(flask.url_for('register'))
@@ -177,15 +181,23 @@ def isEmailUnique(email):
 
 def getProfilePicture(uid):
 	cursor = conn.cursor()
-	cursor.execute("SELECT profile_pic  FROM profile_pic WHERE user_id = '{0}'".format(uid))
-	return cursor.fetchone()[0]
+	if cursor.execute("SELECT Profile_pic  FROM Users WHERE user_id = '{0}'".format(uid)):
+		print("inside the if condition")
+		return cursor.fetchall()
+	else:
+		return None
 
 # profile of the user
 @app.route('/profile')
 @flask_login.login_required
 def protected():
 	uid = getUserIdFromEmail(flask_login.current_user.id)
-	return render_template('profile.html', name=getUserFirstName(uid), message="Here's your profile")
+	# print("here")
+	if getProfilePicture(uid):
+		profile_picture = getProfilePicture(uid)
+	else:
+		profile_picture = getProfilePicture(14)
+	return render_template('profile.html', name=getUserFirstName(uid), message="Here's your profile", photos=profile_picture)
 
 def getUserFirstName(uid):
 	cursor = conn.cursor()
@@ -219,8 +231,8 @@ def friends():
 	print friends
 	friend_names = []
 	for each in friends:
-		friend_names.append(getUserFirstName(each))
-		print friend_names
+		friend_names.append(getUserFirstName(each[0]))
+	print friend_names
 	if request.method == 'POST':
 		first_name = request.form.get('first_name_query')
 		last_name = request.form.get('last_name_query')
@@ -257,17 +269,17 @@ def add_friends():
 	print friend_ids
 	friend_names = []
 	for each in friend_ids:
-		friend_names.append(getUserFirstName(uid))
-		print friend_names
+		friend_names.append(getUserFirstName(each[0]))
+	print friend_names
 	if request.method == 'POST':
 		email = request.form.get('user_email')
 		for each in friend_ids:
-			if each == getUserIdFromEmail(email):
+			if each[0] == getUserIdFromEmail(email):
 				return render_template('add_friends.html', message = "already a friend", all_users= getAllUsers())
 		if addFriend(uid,email):
-			return render_template('add_friends.html', message=addFriend(uid,email), updated_friend_list=friend_names, all_users= getAllUsers())
+			return render_template('add_friends.html', message="Successfully Added " + email, all_users= getAllUsers())
 		else:
-			return render_template('add_friends.html', message="Email not found. Try Again.", updated_friend_list=[], all_users= getAllUsers())
+			return render_template('add_friends.html', message="Email not found. Try Again.", all_users= getAllUsers())
 	else:
 		return render_template('add_friends.html', all_users= getAllUsers())
 
@@ -311,7 +323,7 @@ def upload_file():
 		return render_template('upload.html')
 #end photo uploading code 
 
-#default page
+# default page
 # this is where anonymous browsing happens  
 @app.route("/", methods=['GET'])
 def hello():
